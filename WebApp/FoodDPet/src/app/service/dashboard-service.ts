@@ -21,11 +21,11 @@ export class DashboardService {
 
   getFullnessStatus(): string {
     if (this.percentFullness >= 75) {
-      return 'High';
+      return 'Alto';
     } else if (this.percentFullness >= 50) {
-      return 'Medium';
+      return 'Medio';
     } else {
-      return 'Low';
+      return 'Bajo';
     }
   }
 

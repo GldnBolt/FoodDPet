@@ -1,16 +1,16 @@
 <!-- Estoy re-aprendiendo PrimeNG por que esta bonito -->
-<p-card header="Dashboard">
-  <p>Welcome to the FoodDPet Dashboard! Here you can monitor key metrics and manage your pet's nutrition plans.</p>
-  <p>Fullness Status: {{ fullnessStatus }}</p>
-  <p>Fullness Percentage: {{ fullnessPercentage }}%</p>
+<p-card header="Panel de Control">
+  <p>¡Bienvenido al Panel de Control de FoodDPet! Aquí puedes monitorear métricas clave y gestionar los planes de nutrición de tu mascota.</p>
+  <p>Estado de Llenado: {{ fullnessStatus }}</p>
+  <p>Porcentaje de Llenado: {{ fullnessPercentage }}%</p>
 </p-card>
-<p-card header="Request History">
+<p-card header="Historial de Solicitudes">
   <p-table [value]="requestHistory">
     <ng-template #header>
       <tr>
-        <th>Time</th>
-        <th>Status</th>
-        <th>Action</th>
+        <th>Hora</th>
+        <th>Estado</th>
+        <th>Acción</th>
       </tr>
     </ng-template>
     <ng-template #body let-request>
@@ -18,25 +18,27 @@
         <td>{{ request.hora | date:'short' }}</td>
         <td>@switch (request.estado) {
             @case ("Completed") {
-              <p-tag severity="success" value="Completed"></p-tag>
+              <p-tag severity="success" value="Completado"></p-tag>
             }
             @case ("Cancelled") {
-              <p-tag severity="danger" value="Cancelled"></p-tag>
+              <p-tag severity="danger" value="Cancelado"></p-tag>
             }
             @case ("Pending") {
-              <p-tag severity="info" value="Pending"></p-tag>
+              <p-tag severity="info" value="Pendiente"></p-tag>
             }
 
           }
           </td>
         @if (request.estado == "Pending") {
-          <td>
-            <p-button icon="pi pi-check" severity="success" (click)="cancelRequest(request)" label="Accept" />
-            <p-button icon="pi pi-times" severity="danger" (click)="completeRequest(request)" label="Reject" />
+          <td class="text-center">
+            <div class="flex justify-center gap-2">
+              <p-button icon="pi pi-check" severity="success" (click)="completeRequest(request)" label="Aceptar" />
+              <p-button icon="pi pi-times" severity="danger" (click)="cancelRequest(request)" label="Rechazar" />
+            </div>
           </td>
         } @else {
-          <td>
-            <p-tag severity="secondary" value="No action required"></p-tag>
+          <td class="text-center">
+            <p-tag severity="secondary" value="No se requiere acción"></p-tag>
           </td>
         }
       </tr>
