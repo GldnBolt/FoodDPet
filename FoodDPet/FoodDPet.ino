@@ -1,73 +1,157 @@
-/*
- WiFiEsp example: WebClient
-
- This sketch connects to google website using an ESP8266 module to
- perform a simple web search.
-
- For more details see: http://yaab-arduino.blogspot.com/p/wifiesp-example-client.html
-*/
-
 #include "WiFiEsp.h"
-
-// Emulate Serial1 on pins 6/7 if not present
-#ifndef HAVE_HWSERIAL1
+#include "Adafruit_VL53L1X.h"
 #include "SoftwareSerial.h"
-SoftwareSerial Serial1(6, 7); // RX, TX
-#endif
 
-char ssid[] = "Familia Martinez 2.4";            // your network SSID (name)
-char pass[] = "JimmyAntonio";        // your network password
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
+#define IRQ_PIN 2
+#define XSHUT_PIN 3
+
+#define TRIGGER_PIN 11
+#define ECHO_PIN 12
+
+#define RX 6
+#define TX 7
+
+Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
+
+char ssid[] = "Familia Martinez 2.4";  // your network SSID (name)
+char pass[] = "JimmyAntonio";          // your network password
+int status = WL_IDLE_STATUS;           // the Wifi radio's status
 
 char server[] = "api.ipify.org";
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
+SoftwareSerial Serial1(RX, TX);  // RX, TX
 
-void setup()
-{
-  // initialize serial for debugging
-  Serial.begin(115200);
-  // initialize serial for ESP module
-  Serial1.begin(115200);
+void setup_wifi() {
   // initialize ESP module
   WiFi.init(&Serial1);
 
-  // check for the presence of the shield
-  if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present");
-    // don't continue
-    while (true);
-  }
-
   // attempt to connect to WiFi network
-  while ( status != WL_CONNECTED) {
+  while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network
     status = WiFi.begin(ssid, pass);
   }
 
-  // you're connected now, so print out the data
-  Serial.println("You're connected to the network");
-  
-  printWifiStatus();
-
-  Serial.println();
   Serial.println("Starting connection to server...");
   // if you get a connection, report back via serial
-if (client.connect(server, 80)) {
-  Serial.println("Connected to server");
-  // Hacer un request HTTP GET válido
-  client.println("GET /?format=json HTTP/1.1");
-  client.println("Host: api.ipify.org");
-  client.println("Connection: close");
-  client.println();
-}
+  if (client.connect(server, 80)) {
+    Serial.println("Connected to server");
+    // Hacer un request HTTP GET válido
+    client.println("GET /?format=json HTTP/1.1");
+    client.println("Host: api.ipify.org");
+    client.println("Connection: close");
+    client.println();
+  }
 }
 
-void loop()
-{
+void setup_sensors() {
+  // Ultrasonic sensor pins
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Laser sensor
+  Wire.begin();
+  if (!vl53.begin(0x29, &Wire)) {
+    Serial.print(F("Error on init of VL sensor: "));
+    Serial.println(vl53.vl_status);
+    while (1) delay(10);
+  }
+  Serial.println(F("VL53L1X sensor OK!"));
+
+  // Valid timing budgets: 15, 20, 33, 50, 100, 200 and 500ms!
+  vl53.setTimingBudget(50);
+}
+
+void setup() {
+  // initialize serial for debugging
+  Serial.begin(115200);
+  while (!Serial) delay(10);
+  // setup both distance sensors
+  setup_sensors();
+
+  // initialize serial for ESP module
+  Serial1.begin(115200);
+  while (!Serial1) delay(10);
+  // set up wifi connection
+  setup_wifi();
+}
+
+int measure_distance(int sensor) {
+  int distance;
+  // Laser sensor
+  if (sensor == 1) {
+    bool start = vl53.startRanging();
+    if (start) {
+
+      if (vl53.dataReady()) {
+        // new measurement for the taking!
+        distance = vl53.distance();
+        if (distance == -1) {
+          // something went wrong!
+          Serial.print(F("Couldn't get distance: "));
+          Serial.println(vl53.vl_status);
+          return;
+        } else {
+          // data is read out, time for another reading!
+          vl53.clearInterrupt();
+          vl53.stopRanging();
+          return distance;
+        }
+      }
+    } else {
+      return -1;
+    }
+  } else {
+    // Ultrasonic sensor
+    // Clears the trigPin
+    digitalWrite(TRIGGER_PIN, LOW);
+    delayMicroseconds(2);
+
+    // Sets the trigPin on HIGH state for 10 micro seconds
+    digitalWrite(TRIGGER_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIGGER_PIN, LOW);
+
+    // Reads the echoPin, returns the sound wave travel time in microseconds
+    long duration;
+    duration = pulseIn(ECHO_PIN, HIGH);
+
+    // Calculating the distance
+    distance = duration * 0.034 / 2;
+
+    // Prints the distance on the Serial Monitor
+    Serial.print(String(distance));
+    Serial.println(" cm");
+    return distance;
+  }
+}
+
+
+int get_tank_level() {
+  int distance = measure_distance(1);
+  Serial.println(distance);
+  if (distance < 0) {
+    Serial.println("Could not take measurement");
+    return -1;
+  } else if (distance >= 0 && distance < 100) {
+    Serial.println("Full tank");
+    return 1;
+  } else if (distance >= 100 && distance < 120) {
+    Serial.println("Half full tank");
+    return 2;
+  } else if (distance >= 120 && distance < 140) {
+    Serial.println("Almost empty tank");
+    return 3;
+  } else {
+    Serial.println("Empty tank");
+    return 4;
+  }
+}
+
+void loop() {
   // if there are incoming bytes available
   // from the server, read them and print them
   while (client.available()) {
@@ -81,26 +165,19 @@ void loop()
     Serial.println("Disconnecting from server...");
     client.stop();
 
-    // do nothing forevermore
-    while (true);
+    while (Serial.available() == 0) {}
+
+    String cmd = Serial.readString();
+
+    cmd.trim();  // remove any \r \n whitespace at the end of the String
+
+    if (cmd == "1") {
+      int level = get_tank_level();
+      // Send to server
+    } else if (cmd == "2") {
+      int proximity = measure_distance(2);
+    } else {
+      Serial.println("Unsupported command");
+    }
   }
-}
-
-
-void printWifiStatus()
-{
-  // print the SSID of the network you're attached to
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength
-  long rssi = WiFi.RSSI();
-  Serial.print("Signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
 }
