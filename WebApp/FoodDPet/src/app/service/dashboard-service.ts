@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of, delay } from 'rxjs';
 
 export interface FoodRequest {
   hora: Date;
@@ -35,5 +36,20 @@ export class DashboardService {
 
   getRequestHistory(): FoodRequest[] {
     return this.requestHistory;
+  }
+
+  refillDispenser(): Observable<void> {
+    // Simula el proceso de rellenado
+    // Aquí conectarás con el microcontrolador después
+    this.percentFullness = 100;
+    return of(void 0).pipe(delay(1500));
+  }
+
+  completeRequest(request: FoodRequest): void {
+    request.estado = 'Completed';
+  }
+
+  cancelRequest(request: FoodRequest): void {
+    request.estado = 'Cancelled';
   }
 }
