@@ -15,6 +15,7 @@ export class Dashboard {
   fullnessStatus: string;
   fullnessPercentage: number;
   requestHistory: FoodRequest[];
+  isRefilling: boolean = false;
 
   constructor(private dashboardService: DashboardService) {
     this.fullnessStatus = this.dashboardService.getFullnessStatus();
@@ -22,11 +23,29 @@ export class Dashboard {
     this.requestHistory = this.dashboardService.getRequestHistory();
   }
 
+  refillDispenser() {
+    this.isRefilling = true;
+    this.dashboardService.refillDispenser().subscribe({
+      next: () => {
+        this.fullnessPercentage = this.dashboardService.getFullnessPercentage();
+        this.fullnessStatus = this.dashboardService.getFullnessStatus();
+        this.isRefilling = false;
+        alert('¡Dispensador rellenado exitosamente!');
+      },
+      error: () => {
+        this.isRefilling = false;
+        alert('Error al rellenar el dispensador');
+      },
+    });
+  }
+
   completeRequest(request: FoodRequest) {
-    // Implement completion logic here
+    this.dashboardService.completeRequest(request);
+    this.requestHistory = this.dashboardService.getRequestHistory();
   }
 
   cancelRequest(request: FoodRequest) {
-    // Implement cancellation logic here
+    this.dashboardService.cancelRequest(request);
+    this.requestHistory = this.dashboardService.getRequestHistory();
   }
 }
