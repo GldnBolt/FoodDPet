@@ -13,7 +13,7 @@ export interface ScheduleItem {
 })
 export class FoodScheduleService {
   // IP del ESP32
-  private apiUrl = 'http://192.168.0.246/api';
+  private apiUrl = 'http://192.168.100.146/api';
 
   // BehaviorSubject para datos reactivos
   private schedulesSubject = new BehaviorSubject<ScheduleItem[]>([]);
