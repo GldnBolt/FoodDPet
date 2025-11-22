@@ -171,6 +171,7 @@ void setup() {
     loadSchedulesFromFS();
     loadRequestsFromFS();
   }
+
   //printRequestsLog();
   //print_requests();
 
@@ -195,32 +196,14 @@ void loop() {
 
   if (minute_tick) {
     minute_tick = false;
-    Serial.println(">>> Timer 1 minuto activado");
+    //Serial.println(">>> Timer 1 minuto activado");
     check_proximity();
   }
 
   server.handleClient();
 }
 
-void check_proximity() {
-  int distance = measure_distance(2);
-  if (distance <= 5) {
-    Serial.println("Requesting more food");
-    struct tm timeinfo;
 
-    if (!getLocalTime(&timeinfo)) {
-      Serial.println("No se pudo obtener la hora...");
-      return;
-    }
-
-    String request_time = "";
-    request_time.concat(timeinfo.tm_hour);
-    request_time.concat(":");
-    request_time.concat(timeinfo.tm_min);
-
-    appendRequestToFS(request_time, "Pending");
-  }
-}
 
 void initializeTestData() {
   // Inicializar solicitudes de prueba
@@ -352,6 +335,8 @@ void handleCompleteRequest() {
       if (requests[i].hora == hora) {
         requests[i].estado = "Completed";
         dispense_food();
+        //print_requests();
+        updateRequestsLog();
         server.send(200, "application/json", "{\"message\":\"Request completed\"}");
         return;
       }
@@ -382,6 +367,8 @@ void handleCancelRequest() {
     for (int i = 0; i < requestCount; i++) {
       if (requests[i].hora == hora) {
         requests[i].estado = "Cancelled";
+        //print_requests();
+        updateRequestsLog();
         server.send(200, "application/json", "{\"message\":\"Request cancelled\"}");
         return;
       }
@@ -426,7 +413,7 @@ void handleGetSchedules() {
   serializeJson(doc, response);
 
   server.send(200, "application/json", response);
-  print_schedules();
+  //print_schedules();
   saveSchedulesToFS();
 }
 
@@ -471,7 +458,7 @@ void handleCreateSchedule() {
     server.send(400, "application/json", "{\"error\":\"No data received\"}");
   }
 
-  print_schedules();
+  //print_schedules();
   saveSchedulesToFS();
 }
 
@@ -502,7 +489,8 @@ void handleUpdateSchedule() {
           schedules[i].active = doc["active"];
           schedules[i].triggered = false;
         }
-
+        //print_schedules();
+        saveSchedulesToFS();
         server.send(200, "application/json", "{\"message\":\"Schedule updated\"}");
         return;
       }
@@ -512,9 +500,6 @@ void handleUpdateSchedule() {
   } else {
     server.send(400, "application/json", "{\"error\":\"No data received\"}");
   }
-
-  print_schedules();
-  saveSchedulesToFS();
 }
 
 void handleDeleteSchedule() {
@@ -537,6 +522,7 @@ void handleDeleteSchedule() {
         // Mover todos los elementos siguientes una posición atrás
         for (int j = i; j < scheduleCount - 1; j++) {
           schedules[j] = schedules[j + 1];
+          saveSchedulesToFS();
         }
         scheduleCount--;
 
@@ -549,7 +535,6 @@ void handleDeleteSchedule() {
   } else {
     server.send(400, "application/json", "{\"error\":\"No data received\"}");
   }
-  saveSchedulesToFS();
 }
 
 // ========== HANDLERS AUXILIARES ==========
@@ -665,9 +650,6 @@ void check_events() {
     return;
   }
 
-  // Mostrar la hora actual
-  //Serial.printf("Hora actual: %02d:%02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
   for (int i = 0; i < scheduleCount; i++) {
 
     // comparar hora actual y hora del evento
@@ -678,7 +660,6 @@ void check_events() {
         schedules[i].func();
         schedules[i].triggered = true;
       }
-
     } else {
       schedules[i].triggered = false;
     }
@@ -704,7 +685,7 @@ void print_schedules() {
   }
 }
 
-void print_requests(){
+void print_requests() {
   Serial.println("------ Solicitudes --------");
   for (int i = 0; i < requestCount; i++) {
     Serial.print("Estado: ");
@@ -713,11 +694,6 @@ void print_requests(){
     Serial.println(requests[i].hora);
     Serial.println("-----------------------");
   }
-}
-
-void dispense_food() {
-  Serial.println(">>> ¡Servir comida! <<<");
-  // En este método tiene que ir el control del motor
 }
 
 void saveSchedulesToFS() {
@@ -777,7 +753,7 @@ void loadSchedulesFromFS() {
     scheduleCount++;
   }
 
-  Serial.println("✔ Horarios cargados desde memoria interna");
+  Serial.println("Horarios cargados desde memoria interna");
 }
 
 void appendRequestToFS(String hora, String estado) {
@@ -796,44 +772,66 @@ void appendRequestToFS(String hora, String estado) {
 }
 
 void loadRequestsFromFS() {
-  if (!LittleFS.exists("/requests.log")) {
-    Serial.println("No hay requests.log aún");
-    return;
-  }
-
-  File file = LittleFS.open("/requests.log", "r");
-  if (!file) return;
-
-  requestCount = 0;
-  while (file.available() && requestCount < 10) {
-    String line = file.readStringUntil('\n');
-    int idx = line.indexOf(' ');
-    if (idx > 0) {
-      requests[requestCount].hora = line.substring(0, idx);
-      requests[requestCount].estado = line.substring(idx + 1);
-      requests[requestCount].estado.trim();
-      requestCount++;
-    }
-  }
-
-  file.close();
-  Serial.println("Solicitudes cargadas desde memoria interna");
-}
-
-void printRequestsLog() {
   if (!LittleFS.begin(true)) {
-    Serial.println("❌ Error al montar LittleFS");
-    return;
-  }
-
-  if (!LittleFS.exists("/requests.log")) {
-    Serial.println("❌ No existe requests.log");
+    Serial.println("Error al montar sistema de archivos");
     return;
   }
 
   File file = LittleFS.open("/requests.log", "r");
   if (!file) {
-    Serial.println("❌ No se pudo abrir requests.log");
+    Serial.println("No existe requests.log, iniciando vacío");
+    requestCount = 0;
+    return;
+  }
+
+  Serial.println("Leyendo requests.log...");
+
+  requestCount = 0;  // limpiar arreglo
+
+  while (file.available()) {
+
+    String line = file.readStringUntil('\n');
+    line.trim();
+
+    if (line.length() == 0) continue;
+    int commaIndex = line.indexOf(',');
+
+    if (commaIndex == -1) {
+      continue;
+    }
+
+    String ts = line.substring(0, commaIndex);
+    String st = line.substring(commaIndex + 1);
+
+    if (requestCount < 10) {  // evita overflow
+      requests[requestCount].hora = ts;
+      requests[requestCount].estado = st;
+      requestCount++;
+    } else {
+      Serial.println("Se alcanzó el límite del arreglo de requests");
+      break;
+    }
+  }
+
+  file.close();
+  Serial.println("Requests cargados desde el FS: " + String(requestCount));
+}
+
+
+void printRequestsLog() {
+  if (!LittleFS.begin(true)) {
+    Serial.println("Error al montar LittleFS");
+    return;
+  }
+
+  if (!LittleFS.exists("/requests.log")) {
+    Serial.println("No existe requests.log");
+    return;
+  }
+
+  File file = LittleFS.open("/requests.log", "r");
+  if (!file) {
+    Serial.println("No se pudo abrir requests.log");
     return;
   }
 
@@ -846,4 +844,58 @@ void printRequestsLog() {
 
   Serial.println("=== Fin del archivo ===");
   file.close();
+}
+
+void updateRequestsLog() {
+  if (!LittleFS.begin(true)) {
+    Serial.println("Error al montar sistema de archivos");
+    return;
+  }
+
+  // Abre el archivo en modo "w" -> sobrescribe todo
+  File file = LittleFS.open("/requests.log", "w");
+  if (!file) {
+    Serial.println("No se pudo abrir requests.log para escritura");
+    return;
+  }
+
+  for (int i = 0; i < requestCount; i++) {
+    String line = requests[i].hora + "," + requests[i].estado + "\n";
+    file.print(line);
+  }
+
+  file.close();
+  Serial.println("Requests.log actualizado");
+}
+
+void check_proximity() {
+  int distance = measure_distance(2);
+  if (distance <= 5) {
+    Serial.println("Requesting more food");
+    struct tm timeinfo;
+
+    if (!getLocalTime(&timeinfo)) {
+      Serial.println("No se pudo obtener la hora...");
+      return;
+    }
+
+    char isoTime[25];
+    snprintf(
+      isoTime,
+      sizeof(isoTime),
+      "%04d-%02d-%02dT%02d:%02d:%02d",
+      timeinfo.tm_year + 1900,
+      timeinfo.tm_mon + 1,
+      timeinfo.tm_mday,
+      timeinfo.tm_hour,
+      timeinfo.tm_min,
+      timeinfo.tm_sec);
+
+    appendRequestToFS(String(isoTime), "Pending");
+  }
+}
+
+void dispense_food() {
+  Serial.println(">>> ¡Servir comida! <<<");
+  // En este método tiene que ir el control del motor
 }
