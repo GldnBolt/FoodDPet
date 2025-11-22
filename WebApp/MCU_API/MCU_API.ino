@@ -29,13 +29,21 @@ Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = -6 * 3600;  // Ajusta según tu país
 const int daylightOffset_sec = 0;
-volatile bool tick_1s = false;
 
-void IRAM_ATTR timerCallback(void* arg) {
-  tick_1s = true;
+volatile bool second_tick = false;
+volatile bool minute_tick = false;
+
+void IRAM_ATTR secondCallback(void* arg) {
+  second_tick = true;
 }
 
-esp_timer_handle_t periodic_timer;
+void IRAM_ATTR minuteCallback(void* arg) {
+  minute_tick = true;
+}
+
+esp_timer_handle_t second_timer;
+esp_timer_handle_t minute_timer;
+
 
 // Configuración WiFi
 const char* ssid = "Familia Martinez 2.4";
@@ -94,15 +102,26 @@ void setup_timer() {
   delay(2000);
 
   // Timer 1 second
-  const esp_timer_create_args_t timer_args = {
-    .callback = &timerCallback,
+  const esp_timer_create_args_t second_args = {
+    .callback = &secondCallback,
     .arg = NULL,
     .dispatch_method = ESP_TIMER_TASK,
     .name = "timer_1s"
   };
 
-  esp_timer_create(&timer_args, &periodic_timer);
-  esp_timer_start_periodic(periodic_timer, 1'000'000);
+  esp_timer_create(&second_args, &second_timer);
+  esp_timer_start_periodic(second_timer, 1'000'000);
+
+  const esp_timer_create_args_t minute_args = {
+    .callback = &minuteCallback,
+    .arg = NULL,
+    .dispatch_method = ESP_TIMER_TASK,
+    .name = "timer_1m"
+  };
+
+  esp_timer_create(&minute_args, &minute_timer);
+  // 60,000,000 µs = 1 minuto
+  esp_timer_start_periodic(minute_timer, 60'000'000ULL);
 }
 
 void setup() {
@@ -127,7 +146,10 @@ void setup() {
 
   // setup both distance sensors
   Serial.println("Configurando sensores");
-  setup_sensors();
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  // Comentar setup_Sensors por error del i2c
+  //setup_sensors();
 
   // Configurar rutas de la API
   setupRoutes();
@@ -142,11 +164,26 @@ void setup() {
 }
 
 void loop() {
-  if (tick_1s) {
-    tick_1s = false;
+  // Verificar el flag
+  if (second_tick) {
+    second_tick = false;
     check_events();
   }
+
+  if (minute_tick) {
+    minute_tick = false;
+    Serial.println(">>> Timer 1 minuto activado");
+    check_proximity();
+  }
+
   server.handleClient();
+}
+
+void check_proximity(){
+  int distance = measure_distance(2);
+  if (distance <= 5){
+    Serial.println("Requesting more food");
+  }
 }
 
 void initializeTestData() {
@@ -275,6 +312,7 @@ void handleCompleteRequest() {
     for (int i = 0; i < requestCount; i++) {
       if (requests[i].hora == hora) {
         requests[i].estado = "Completed";
+        dispense_food();
         server.send(200, "application/json", "{\"message\":\"Request completed\"}");
         return;
       }
