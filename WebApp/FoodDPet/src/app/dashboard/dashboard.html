@@ -1,0 +1,62 @@
+<!-- Estoy re-aprendiendo PrimeNG por que esta bonito -->
+<p-card header="Panel de Control">
+  <div class="mb-4">
+    <h3 class="text-xl font-semibold mb-3">Estado del Dispensador</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <p class="mb-2"><strong>Estado de Llenado:</strong> {{ fullnessStatus }}</p>
+        <p><strong>Porcentaje de Llenado:</strong> {{ fullnessPercentage }}%</p>
+      </div>
+      <div class="flex items-center justify-end">
+        <p-button
+          label="Rellenar Plato"
+          icon="pi pi-replay"
+          severity="success"
+          (click)="refillDispenser()"
+          [loading]="isRefilling" />
+      </div>
+    </div>
+  </div>
+</p-card>
+
+<p-card header="Historial de Solicitudes" class="mt-4">
+  <p-table [value]="requestHistory">
+    <ng-template #header>
+      <tr>
+        <th>Hora</th>
+        <th>Estado</th>
+        <th>Acción</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-request>
+      <tr>
+        <td>{{ request.hora | date:'short' }}</td>
+        <td>@switch (request.estado) {
+            @case ("Completed") {
+              <p-tag severity="success" value="Completado"></p-tag>
+            }
+            @case ("Cancelled") {
+              <p-tag severity="danger" value="Cancelado"></p-tag>
+            }
+            @case ("Pending") {
+              <p-tag severity="info" value="Pendiente"></p-tag>
+            }
+          }
+        </td>
+        @if (request.estado == "Pending") {
+          <td class="text-center">
+            <div class="flex justify-center gap-2">
+              <p-button icon="pi pi-check" severity="success" (click)="completeRequest(request)" label="Aceptar" />
+              <p-button icon="pi pi-times" severity="danger" (click)="cancelRequest(request)" label="Rechazar" />
+            </div>
+          </td>
+        } @else {
+          <td class="text-center">
+            <p-tag severity="secondary" value="No se requiere acción"></p-tag>
+          </td>
+        }
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
+
