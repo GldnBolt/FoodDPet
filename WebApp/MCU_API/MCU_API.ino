@@ -7,6 +7,7 @@
 #include <Wire.h>
 #include "time.h"
 #include "esp_timer.h"
+#include <LittleFS.h>
 
 #include <WiFi.h>
 #include <WebServer.h>
@@ -15,10 +16,10 @@ WebServer server(80);
 #include <ArduinoJson.h>
 
 // Pins for distance sensors
-#define SDA_PIN 5
-#define SCL_PIN 6
-#define IRQ_PIN 2
-#define XSHUT_PIN 4
+#define SDA_PIN 8
+#define SCL_PIN 9
+#define IRQ_PIN 3
+#define XSHUT_PIN 7
 
 #define TRIGGER_PIN 38
 #define ECHO_PIN 37
@@ -69,32 +70,44 @@ struct Schedule {
 
 // Datos de prueba - Solicitudes
 FoodRequest requests[10];
-int requestCount = 4;
+int requestCount = 0;
 
 // Datos de prueba - Horarios
 Schedule schedules[10];
-int scheduleCount = 3;
+int scheduleCount = 0;
 
 // Estado del dispensador
 int fullnessPercentage = 100;
 
 void setup_sensors() {
-  // Ultrasonic sensor pins
   pinMode(TRIGGER_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  // Laser sensor
-  Wire.begin(SDA_PIN, SCL_PIN);
+  pinMode(XSHUT_PIN, OUTPUT);
+  digitalWrite(XSHUT_PIN, HIGH);
+  delay(120);
+
+  Wire.begin(SDA_PIN, SCL_PIN, 100000);  // 100 kHz
+
+  Serial.println("Escaneando I2C...");
+
+  Wire.beginTransmission(0x29);
+  byte error = Wire.endTransmission();
+
+  if (error == 0) Serial.println(">>> Sensor detectado en 0x29");
+  else Serial.println(">>> NO se detectó sensor I2C en 0x29");
+
   if (!vl53.begin(0x29, &Wire)) {
     Serial.print(F("Error on init of VL sensor: "));
     Serial.println(vl53.vl_status);
     while (1) delay(10);
   }
+
   Serial.println(F("VL53L1X sensor OK!"));
 
-  // Valid timing budgets: 15, 20, 33, 50, 100, 200 and 500ms!
   vl53.setTimingBudget(50);
 }
+
 
 void setup_timer() {
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -149,7 +162,17 @@ void setup() {
   pinMode(TRIGGER_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
   // Comentar setup_Sensors por error del i2c
-  //setup_sensors();
+  setup_sensors();
+
+  if (!LittleFS.begin(true)) {
+    Serial.println("Error inicializando sistema de archivos");
+  } else {
+    Serial.println("Sistema de archivos listo");
+    loadSchedulesFromFS();
+    loadRequestsFromFS();
+  }
+  //printRequestsLog();
+  //print_requests();
 
   // Configurar rutas de la API
   setupRoutes();
@@ -179,10 +202,23 @@ void loop() {
   server.handleClient();
 }
 
-void check_proximity(){
+void check_proximity() {
   int distance = measure_distance(2);
-  if (distance <= 5){
+  if (distance <= 5) {
     Serial.println("Requesting more food");
+    struct tm timeinfo;
+
+    if (!getLocalTime(&timeinfo)) {
+      Serial.println("No se pudo obtener la hora...");
+      return;
+    }
+
+    String request_time = "";
+    request_time.concat(timeinfo.tm_hour);
+    request_time.concat(":");
+    request_time.concat(timeinfo.tm_min);
+
+    appendRequestToFS(request_time, "Pending");
   }
 }
 
@@ -192,11 +228,13 @@ void initializeTestData() {
   requests[1] = { "2024-11-15T14:30:00", "Cancelled" };
   requests[2] = { "2024-11-15T09:15:00", "Completed" };
   requests[3] = { "2024-11-15T16:45:00", "Pending" };
+  requestCount = 4;
 
   // Inicializar horarios de prueba
   schedules[0] = { 1, "12:55", true, 12, 55, dispense_food, false };
   schedules[1] = { 2, "14:00", true, 14, 0, dispense_food, false };
   schedules[2] = { 3, "20:00", false, 20, 0, dispense_food, false };
+  scheduleCount = 3;
 }
 
 void setupRoutes() {
@@ -280,6 +318,7 @@ void handleGetRequests() {
   sendCORSHeaders();
   DynamicJsonDocument doc(2048);
   JsonArray array = doc.to<JsonArray>();
+  loadRequestsFromFS();
 
   for (int i = 0; i < requestCount; i++) {
     JsonObject obj = array.createNestedObject();
@@ -388,6 +427,7 @@ void handleGetSchedules() {
 
   server.send(200, "application/json", response);
   print_schedules();
+  saveSchedulesToFS();
 }
 
 void handleCreateSchedule() {
@@ -432,6 +472,7 @@ void handleCreateSchedule() {
   }
 
   print_schedules();
+  saveSchedulesToFS();
 }
 
 void handleUpdateSchedule() {
@@ -473,6 +514,7 @@ void handleUpdateSchedule() {
   }
 
   print_schedules();
+  saveSchedulesToFS();
 }
 
 void handleDeleteSchedule() {
@@ -507,6 +549,7 @@ void handleDeleteSchedule() {
   } else {
     server.send(400, "application/json", "{\"error\":\"No data received\"}");
   }
+  saveSchedulesToFS();
 }
 
 // ========== HANDLERS AUXILIARES ==========
@@ -661,7 +704,146 @@ void print_schedules() {
   }
 }
 
+void print_requests(){
+  Serial.println("------ Solicitudes --------");
+  for (int i = 0; i < requestCount; i++) {
+    Serial.print("Estado: ");
+    Serial.println(requests[i].estado);
+    Serial.print("Hora: ");
+    Serial.println(requests[i].hora);
+    Serial.println("-----------------------");
+  }
+}
+
 void dispense_food() {
   Serial.println(">>> ¡Servir comida! <<<");
   // En este método tiene que ir el control del motor
+}
+
+void saveSchedulesToFS() {
+  File file = LittleFS.open("/schedules.json", "w");
+  if (!file) {
+    Serial.println("No se pudo abrir schedules.json para escribir");
+    return;
+  }
+
+  DynamicJsonDocument doc(2048);
+  JsonArray arr = doc.to<JsonArray>();
+
+  for (int i = 0; i < scheduleCount; i++) {
+    JsonObject o = arr.createNestedObject();
+    o["id"] = schedules[i].id;
+    o["time"] = schedules[i].time;
+    o["active"] = schedules[i].active;
+  }
+
+  serializeJson(doc, file);
+  file.close();
+  Serial.println("Horarios guardados en memoria interna");
+}
+
+
+void loadSchedulesFromFS() {
+  if (!LittleFS.exists("/schedules.json")) {
+    Serial.println("No hay schedules.json, usando valores por defecto");
+    return;
+  }
+
+  File file = LittleFS.open("/schedules.json", "r");
+  if (!file) {
+    Serial.println("Error leyendo schedules.json");
+    return;
+  }
+
+  DynamicJsonDocument doc(2048);
+  DeserializationError err = deserializeJson(doc, file);
+  file.close();
+
+  if (err) {
+    Serial.println("JSON inválido en schedules.json");
+    return;
+  }
+
+  JsonArray arr = doc.as<JsonArray>();
+  scheduleCount = 0;
+
+  for (JsonObject o : arr) {
+    schedules[scheduleCount].id = o["id"];
+    schedules[scheduleCount].time = o["time"].as<String>();
+    schedules[scheduleCount].active = o["active"];
+    schedules[scheduleCount].hour = schedules[scheduleCount].time.substring(0, 2).toInt();
+    schedules[scheduleCount].minute = schedules[scheduleCount].time.substring(3, 5).toInt();
+    schedules[scheduleCount].func = dispense_food;
+    scheduleCount++;
+  }
+
+  Serial.println("✔ Horarios cargados desde memoria interna");
+}
+
+void appendRequestToFS(String hora, String estado) {
+  File file = LittleFS.open("/requests.log", "a");
+  if (!file) {
+    Serial.println("No se pudo abrir requests.log");
+    return;
+  }
+
+  file.print(hora);
+  file.print(" ");
+  file.println(estado);
+  file.close();
+
+  Serial.println("Registro añadido a requests.log en memoria interna");
+}
+
+void loadRequestsFromFS() {
+  if (!LittleFS.exists("/requests.log")) {
+    Serial.println("No hay requests.log aún");
+    return;
+  }
+
+  File file = LittleFS.open("/requests.log", "r");
+  if (!file) return;
+
+  requestCount = 0;
+  while (file.available() && requestCount < 10) {
+    String line = file.readStringUntil('\n');
+    int idx = line.indexOf(' ');
+    if (idx > 0) {
+      requests[requestCount].hora = line.substring(0, idx);
+      requests[requestCount].estado = line.substring(idx + 1);
+      requests[requestCount].estado.trim();
+      requestCount++;
+    }
+  }
+
+  file.close();
+  Serial.println("Solicitudes cargadas desde memoria interna");
+}
+
+void printRequestsLog() {
+  if (!LittleFS.begin(true)) {
+    Serial.println("❌ Error al montar LittleFS");
+    return;
+  }
+
+  if (!LittleFS.exists("/requests.log")) {
+    Serial.println("❌ No existe requests.log");
+    return;
+  }
+
+  File file = LittleFS.open("/requests.log", "r");
+  if (!file) {
+    Serial.println("❌ No se pudo abrir requests.log");
+    return;
+  }
+
+  Serial.println("=== Contenido de requests.log ===");
+
+  while (file.available()) {
+    String line = file.readStringUntil('\n');
+    Serial.println(line);
+  }
+
+  Serial.println("=== Fin del archivo ===");
+  file.close();
 }
