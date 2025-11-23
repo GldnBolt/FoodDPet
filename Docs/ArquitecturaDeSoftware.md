@@ -6,7 +6,7 @@ Descripción de la arquitectura del software embebido, incluyendo diagramas de f
 El programa principal que es el que controla el microcontrolador está escrito en Arduino/C++. El programa se conecta a la red WiFi para comunicarse con la aplicación web, mide constantemente los sensores para monitorear el nivel de comida y la presencia de la mascota, ejecuta los horarios programados para dispensar comida automáticamente, y guarda todos los datos importantes en memoria permanente para asegurar que no se pierdan.
 El mismo está organizado para ser eficiente y responsivo, al cargar el programa este establece la conexion con los sensores, se conecta a la red WiFi, sincroniza la hora con internet, carga los datos almacenados, y luego entra en un bucle infinito donde atiende las solicitudes de la aplicación web. Este flujo se puede observar mejor de la siguiente manera:
 
-![Diagrama de flujo del programa principal](./images/IMG_0716.png)
+![Diagrama de flujo del programa principal](./images/Untitled Diagram.jpg)
 
 
 ## Estrategias de Comunicación y Gestión de E/S 
@@ -16,7 +16,7 @@ Para los dispositivos de entrada y salida del esp 32 se han implementado diversa
 La primera es la utilizacion de contadores de tiempo que permiten ejecutar tareas periódicas sin bloquear el flujo principal del programa.  
 Estos timers funcionan en paralelo con el resto del código, lo que significa que el microcontrolador pueda estar respondiendo a la aplicación web mientras simultáneamente está verificando horarios y escaneando sensores lo anterior permite que el sistema sea responsivo y esté sinconizado. 
 Para los timers se definen dos, el timer de cada segundo y el del minuto, el inicial es para verificar en tiempo real los horarios programados y el segundo timer es para escanear el sensor ultrasónico cada minuto y detectar si la mascota está pidiendo comida.
----
+
 Por otro lado, cada dispositivo tiene su propio protocolo de comunicación específico:
 
 1. Sensor Ultrasonico: Este sensor utiliza un protocolo basado en pulsos. El microcontrolador envía un pulso de activación al sensor, que luego emite un pulso ultrasónico para por realizar las medias.
