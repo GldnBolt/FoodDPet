@@ -1,5 +1,3 @@
-Descripción de la aplicación web/móvil desarrollada, incluyendo arquitectura de la aplicación, interfaces de usuario, protocolos de comunicación robot-aplicación, y funcionalidades implementadas para control y monitoreo.
-
 # Aplicación web desarrollada
 
 La aplicación web de FoodDPet está diseñada para gestionar el sistema automático de alimentación de mascotas. Permite a los dueños de mascotas programar horarios de comida, monitorear el estado del comedero y mantener un registro histórico de las alimentaciones. La aplicación ha sido construida con tecnologías web modernas y responsivas, pensando en una experiencia de usuario intuitiva que cualquiera pueda usar sin necesidad de conocimientos técnicos.
@@ -32,3 +30,9 @@ En esta seccion se define cuándo y cuánta comida quieres que reciba tu mascota
 
 ---
 ## Protocolos de Comunicación Robot-Aplicación
+
+La aplicación web se comunica con el dispensador automático a través del microcontrolador que es el que conecta todo del sistema. Este chip está conectado por WiFi y constantemente está pendiente de recibir órdenes desde la aplicación.
+
+Al presionar un boton desde la aplicación web la aplicación recopila la información correspondiente y envia un mensaje al microcontrolador el cual procesa la información y ejecuta la acción solicitada. Este microcontrolador también envía datos de vuelta a la aplicación, como el nivel actual de comida y el estado de las solicitudes comunicandose a su misma vez con cada uno de los sensores. 
+
+El microcontrolador tiene un reloj interno sincronizado con los servidores de hora de internet, así que siempre sabe la hora exacta. El mismo cada segundo verifica si la hora actual coincide con alguno de los horarios programados. Cuando coincide se verifica que el horario esté activo y de ser así le ordena al motor que dispense la comida y registra en el historial de que se realizó la alimentación.

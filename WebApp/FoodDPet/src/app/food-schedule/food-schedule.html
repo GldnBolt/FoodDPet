@@ -7,7 +7,6 @@
     <ng-template #header>
       <tr>
         <th>Hora</th>
-        <th>Cantidad (g)</th>
         <th>Estado</th>
         <th>Acciones</th>
       </tr>
@@ -15,7 +14,6 @@
     <ng-template #body let-schedule>
       <tr>
         <td>{{ schedule.time }}</td>
-        <td>{{ schedule.amount }}</td>
         <td>
           @if (schedule.active) {
             <p-tag severity="success" value="Activo" />
@@ -61,17 +59,6 @@
         type="time"
         pInputText
         [(ngModel)]="selectedSchedule.time"
-        class="w-full" />
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <label for="amount">Cantidad (gramos)</label>
-      <p-inputNumber
-        id="amount"
-        [(ngModel)]="selectedSchedule.amount"
-        [min]="0"
-        [max]="1000"
-        suffix=" g"
         class="w-full" />
     </div>
 
