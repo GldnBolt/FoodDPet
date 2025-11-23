@@ -20,7 +20,7 @@ El consumo energético del robot ha sido cuidadosamente analizado para garantiza
 A continuación se presentan los diagramas de conexión que ilustran cómo se interconectan los diferentes componentes del robot, se utiliza la herramienta de Tinkercad para el diseño de circuitos y simulaciones. Cabe destacar que el diseño final del hardware no es complemente reflejado en Tinkercad, por temas de limitaciones de la herramienta no todos los componentes están disponibles,
 pero se utilizó para validar las conexiones y el funcionamiento básico de los componentes:
 
-![Diagrama de conexiones basico](./images/Arqui.png)
+![Diagrama de conexiones basico](./images/Arqui.pdf)
 
 ## Consideraciones de Diseño Mecánico
 
