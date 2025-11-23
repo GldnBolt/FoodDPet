@@ -9,7 +9,7 @@ El robot utiliza una variedad de sensores para monitorear su entorno y asegurar 
 
 - Sensor Tof400c : Empleado para la detección precisa de presencia del animal cerca del dispensador para activar el pedido de alimento.
 
-- Servomotor SG90: Utilizado para abrir y cerrar la tapa del compartimento de alimento.
+- Motor DC: Utilizado para mover el tornillo de dispensado de alimento.
 
 
 ## Analisis de Consumo Energético
