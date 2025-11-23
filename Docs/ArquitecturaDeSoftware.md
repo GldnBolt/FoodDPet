@@ -1,8 +1,5 @@
 ## Arquitectura de Software
 
-Descripción de la arquitectura del software embebido, incluyendo diagramas de flujo del programa principal, estrategias de gestión de E/S (manejo de interrupciones, prioridades, sincronización), protocolos de comunicación implementados con análisis comparativo, y organización de memoria utilizada.
-
-
 El programa principal que es el que controla el microcontrolador está escrito en Arduino/C++. El programa se conecta a la red WiFi para comunicarse con la aplicación web, mide constantemente los sensores para monitorear el nivel de comida y la presencia de la mascota, ejecuta los horarios programados para dispensar comida automáticamente, y guarda todos los datos importantes en memoria permanente para asegurar que no se pierdan.
 El mismo está organizado para ser eficiente y responsivo, al cargar el programa este establece la conexion con los sensores, se conecta a la red WiFi, sincroniza la hora con internet, carga los datos almacenados, y luego entra en un bucle infinito donde atiende las solicitudes de la aplicación web. Este flujo se puede observar mejor de la siguiente manera:
 
@@ -29,3 +26,12 @@ Por otro lado, cada dispositivo tiene su propio protocolo de comunicación espec
 
 
 ## Organización de Memoria
+Para el almacenamiento de datos se utiliza la memoria EEPROM del microcontrolador. Donde se guardan los horarios de alimentación programados por  medio de un json y las peticiones de alimentacion realizadas por medio de archivo de texto log. Para el manejo de estos archivos se utiliza la libreria de littlefs que permite crear un sistema de archivos en la memoria flash del microcontrolador. Se eligió esta manera de almacenamiento debido a su capacidad para manejar múltiples archivos y su facilidad de uso con el microcontrolador. 
+
+La organización de la memoria se realiza de la siguiente manera:      
+- Los primeros bytes de la memoria EEPROM se reservan para almacenar la cantidad de horarios programados. Esto permite al sistema saber cuántos horarios debe cargar al iniciar.
+
+- A continuación, se asigna un bloque de memoria para cada horario programado. Cada bloque contiene la hora y minuto lo que facilita la lectura y escritura de horarios específicos sin afectar otros datos.
+
+- Finalmente, se reserva un espacio adicional para almacenar el historial de alimentaciones realizadas. Cada entrada en el historial incluye la fecha y hora de la alimentación, así como el estado de la operación. Esto permite al usuario revisar el historial completo desde la aplicación web.
+
