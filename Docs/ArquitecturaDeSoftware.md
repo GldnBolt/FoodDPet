@@ -6,7 +6,7 @@ Descripción de la arquitectura del software embebido, incluyendo diagramas de f
 El programa principal que es el que controla el microcontrolador está escrito en Arduino/C++. El programa se conecta a la red WiFi para comunicarse con la aplicación web, mide constantemente los sensores para monitorear el nivel de comida y la presencia de la mascota, ejecuta los horarios programados para dispensar comida automáticamente, y guarda todos los datos importantes en memoria permanente para asegurar que no se pierdan.
 El mismo está organizado para ser eficiente y responsivo, al cargar el programa este establece la conexion con los sensores, se conecta a la red WiFi, sincroniza la hora con internet, carga los datos almacenados, y luego entra en un bucle infinito donde atiende las solicitudes de la aplicación web. Este flujo se puede observar mejor de la siguiente manera:
 
-![Diagrama de flujo del programa principal](./images/Untitled Diagram.jpg)
+![Diagrama de conexiones basico](./images/UntitledDiagram.jpg)
 
 
 ## Estrategias de Comunicación y Gestión de E/S 
