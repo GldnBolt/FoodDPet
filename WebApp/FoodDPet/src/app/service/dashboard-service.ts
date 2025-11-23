@@ -18,7 +18,7 @@ interface FullnessResponse {
 })
 export class DashboardService {
   // IP del ESP32
-  private apiUrl = 'http://192.168.100.146/api';
+  private apiUrl = 'http://192.168.0.54/api';
 
   // BehaviorSubjects para datos reactivos
   private percentFullnessSubject = new BehaviorSubject<number>(75);

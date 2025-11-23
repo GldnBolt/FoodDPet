@@ -14,15 +14,38 @@
 WebServer server(80);
 
 #include <ArduinoJson.h>
+#include <Stepper.h>
 
 // Pins for distance sensors
 #define SDA_PIN 8
 #define SCL_PIN 9
 #define IRQ_PIN 3
-#define XSHUT_PIN 7
+#define XSHUT_PIN 16
 
 #define TRIGGER_PIN 38
 #define ECHO_PIN 37
+
+// ---------- Configuración del motor paso a paso (28BYJ-48 + ULN2003) ----------
+const int stepsPerRevolution = 2048;  // pasos por vuelta del 28BYJ-48
+
+// Pines del ULN2003 conectados a la ESP32-S3
+const int IN1_PIN = 4;   // GPIO4
+const int IN2_PIN = 5;   // GPIO5
+const int IN3_PIN = 6;   // GPIO6
+const int IN4_PIN = 7;   // GPIO7  (OJO: XSHUT_PIN se movió al GPIO16)
+
+// Botón local para pruebas del dispensador
+const int BUTTON_PIN = 10;   // GPIO10, botón entre GPIO10 y GND
+
+// Objeto Stepper
+// Si el motor vibra y no gira, probar el otro orden de pines comentado abajo.
+Stepper myStepper(stepsPerRevolution, IN1_PIN, IN3_PIN, IN2_PIN, IN4_PIN);
+// Alternativa:
+// Stepper myStepper(stepsPerRevolution, IN1_PIN, IN2_PIN, IN3_PIN, IN4_PIN);
+
+bool motorOcupado     = false;
+int  ultimoEstadoBoton = HIGH;  // con INPUT_PULLUP: HIGH = no presionado
+
 
 Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
 
@@ -47,8 +70,8 @@ esp_timer_handle_t minute_timer;
 
 
 // Configuración WiFi
-const char* ssid = "Familia Martinez 2.4";
-const char* password = "JimmyAntonio";
+const char* ssid = "Los Pardos";
+const char* password = "Bienvenido";
 
 // Estructura para Solicitudes
 struct FoodRequest {
@@ -141,6 +164,10 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  // Inicializar control del motor paso a paso y botón local
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  myStepper.setSpeed(20);  // 20 rpm ≈ 1 vuelta en ~3 s
+
   // Inicializar datos de prueba
   initializeTestData();
 
@@ -188,7 +215,7 @@ void setup() {
 }
 
 void loop() {
-  // Verificar el flag
+  // Verificar los flags de los timers
   if (second_tick) {
     second_tick = false;
     check_events();
@@ -200,10 +227,18 @@ void loop() {
     check_proximity();
   }
 
+  // Botón local: si se presiona, disparamos un ciclo de dispensado
+  int estadoBoton = digitalRead(BUTTON_PIN);
+  bool botonRecienPresionado = (ultimoEstadoBoton == HIGH && estadoBoton == LOW);
+  if (botonRecienPresionado && !motorOcupado) {
+    Serial.println("Boton local presionado -> dispensar comida");
+    dispense_food();
+  }
+  ultimoEstadoBoton = estadoBoton;
+
+  // Atender peticiones HTTP
   server.handleClient();
 }
-
-
 
 void initializeTestData() {
   // Inicializar solicitudes de prueba
@@ -382,7 +417,11 @@ void handleCancelRequest() {
 
 void handleRefill() {
   sendCORSHeaders();
-  //fullnessPercentage = fullnessPercentage - 5;
+
+  // Primero: dispensar comida (mueve el motor)
+  dispense_food();
+
+  // Luego de dispensar, actualizar el nivel del tanque
   fullnessPercentage = get_tank_level();
 
   StaticJsonDocument<200> doc;
@@ -394,6 +433,7 @@ void handleRefill() {
 
   server.send(200, "application/json", response);
 }
+
 
 // ========== HANDLERS DE HORARIOS ==========
 
@@ -896,6 +936,21 @@ void check_proximity() {
 }
 
 void dispense_food() {
-  Serial.println(">>> ¡Servir comida! <<<");
-  // En este método tiene que ir el control del motor
+  // Evitar llamadas reentrantes si el motor ya está en marcha
+  if (motorOcupado) {
+    Serial.println("dispense_food(): motor ocupado, se ignora la llamada adicional");
+    return;
+  }
+
+  motorOcupado = true;
+  Serial.println(">>> ¡Servir comida (motor paso a paso) durante 10 segundos! <<<");
+
+  unsigned long inicio = millis();
+  // Girar siempre en el mismo sentido durante ~10 s
+  while (millis() - inicio < 10000UL) {
+    myStepper.step(1);   // Puedes cambiar 1 por 2, 4, etc. para ajustar velocidad
+  }
+
+  Serial.println(">>> Fin de ciclo de dispensado <<<");
+  motorOcupado = false;
 }
