@@ -17,20 +17,44 @@ interface FullnessResponse {
   providedIn: 'root',
 })
 export class DashboardService {
-  // IP del ESP32
-  private apiUrl = 'http://192.168.0.54/api';
+  private readonly STORAGE_KEY = 'esp32_ip';
+  private readonly DEFAULT_IP = '192.168.0.54';
+  private apiUrl: string;
 
   // BehaviorSubjects para datos reactivos
   private percentFullnessSubject = new BehaviorSubject<number>(75);
   private fullnessStatusSubject = new BehaviorSubject<string>('Medio');
   private requestHistorySubject = new BehaviorSubject<FoodRequest[]>([]);
+  private esp32IpSubject = new BehaviorSubject<string>(this.DEFAULT_IP);
 
   // Observables públicos
   public percentFullness$ = this.percentFullnessSubject.asObservable();
   public fullnessStatus$ = this.fullnessStatusSubject.asObservable();
   public requestHistory$ = this.requestHistorySubject.asObservable();
+  public esp32Ip$ = this.esp32IpSubject.asObservable();
 
   constructor(private http: HttpClient) {
+    this.apiUrl = this.buildApiUrl(this.getStoredIp());
+    this.esp32IpSubject.next(this.getStoredIp());
+    this.loadInitialData();
+  }
+
+  private getStoredIp(): string {
+    return localStorage.getItem(this.STORAGE_KEY) || this.DEFAULT_IP;
+  }
+
+  private buildApiUrl(ip: string): string {
+    return `http://${ip}/api`;
+  }
+
+  public getEsp32Ip(): string {
+    return this.esp32IpSubject.value;
+  }
+
+  public setEsp32Ip(ip: string): void {
+    localStorage.setItem(this.STORAGE_KEY, ip);
+    this.apiUrl = this.buildApiUrl(ip);
+    this.esp32IpSubject.next(ip);
     this.loadInitialData();
   }
 

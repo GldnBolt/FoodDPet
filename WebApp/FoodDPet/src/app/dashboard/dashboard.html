@@ -1,6 +1,27 @@
 <!-- Estoy re-aprendiendo PrimeNG por que esta bonito -->
 <p-card header="Panel de Control">
   <div class="mb-4">
+    <h3 class="text-xl font-semibold mb-3">Configuración del ESP32</h3>
+    <div class="flex gap-3 items-end mb-4">
+      <div class="flex-1">
+        <label for="esp32-ip" class="block mb-2 font-medium">Dirección IP del ESP32:</label>
+        <input
+          id="esp32-ip"
+          type="text"
+          pInputText
+          [(ngModel)]="esp32IpInput"
+          placeholder="Ej: 192.168.0.54"
+          class="w-full" />
+      </div>
+      <p-button
+        label="Actualizar IP"
+        icon="pi pi-refresh"
+        (click)="updateEsp32Ip()"
+        severity="info" />
+    </div>
+  </div>
+
+  <div class="mb-4">
     <h3 class="text-xl font-semibold mb-3">Estado del Dispensador</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div>
@@ -20,7 +41,13 @@
 </p-card>
 
 <p-card header="Historial de Solicitudes" class="mt-4">
-  <p-table [value]="requestHistory">
+  <p-table
+    [value]="requestHistory"
+    [paginator]="true"
+    [rows]="5"
+    [rowsPerPageOptions]="[5, 10, 20]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} solicitudes">
     <ng-template #header>
       <tr>
         <th>Hora</th>
