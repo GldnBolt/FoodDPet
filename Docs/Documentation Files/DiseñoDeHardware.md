@@ -9,7 +9,7 @@ El robot utiliza una variedad de sensores para monitorear su entorno y asegurar 
 
 - Sensor Tof400c : Empleado para la detección precisa de presencia del animal cerca del dispensador para activar el pedido de alimento.
 
-- Motor DC: Utilizado para mover el tornillo de dispensado de alimento.
+- Motor Stepper: Utilizado para mover el tornillo de dispensado de alimento.
 
 
 ## Analisis de Consumo Energético
@@ -31,12 +31,12 @@ El mecanismo principal del robot consiste en un tornillo infinito, este es el me
 
 El diseño de la tarjeta perforada se ha realizado teniendo en cuenta la disposición óptima de los componentes para minimizar interferencias y facilitar el ensamblaje. Se han utilizado software de diseño de PCB para crear un diseño compacto y eficiente, asegurando que todas las conexiones sean robustas y confiables. Este diseño representa la versión final del hardware del robot FoodDPet, optimizado para su funcionalidad y durabilidad:
 
-![Diagrama de conexiones](el otro diagrama).
+![Diagrama de la tarjeta perforada](./images/image0.webp).
 
 ## Diseño de la Carcasa
 
 La carcasa del robot ha sido diseñada para proteger los componentes internos y proporcionar una apariencia atractiva y funcional. Se ha utilizado software de modelado 3D para crear un diseño que sea fácil de ensamblar y mantener. La carcasa está hecha de materiales resistentes y ligeros como lo es el PLA. El diseño de la carcasa también incluye aberturas estratégicas para la ventilación y el acceso a los componentes internos, facilitando el mantenimiento y las actualizaciones futuras.
 
-![Diagrama de conexiones basico](./images/image.png)
+![Modelo3D](./images/image.png)
 
 

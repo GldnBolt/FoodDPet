@@ -59,7 +59,7 @@ Introducir en la aplicación la IP que se imprime después de iniciar el sistema
 
 ### DIAGRAMAS DEL CIRCUITO
 
-![Diagrama del circuito](ruta/al/diagrama.png)
+![Diagrama del circuito](ruta/al/image1.webp)
 
 ### DEMOSTRACIONES DE USO
 En el siguiente enlace se puede observar una demostración del funcionamiento del alimentador automático FoodDPet:

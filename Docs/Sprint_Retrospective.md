@@ -2,7 +2,7 @@
 Este documento detalla las retrospectivas de los sprints realizados durante el desarrollo del proyecto FoodDPet. En cada retrospectiva, se analizan los aspectos positivos, las áreas de mejora y las acciones a tomar para futuros sprints. Lo anterior ayuda a mejorar continuamente el proceso de desarrollo y la calidad del producto final.
 
 ### Sprint Retrospective 1
-**Fecha:** November 14th, 2025
+**Fecha:** Noviembre 14, 2025
 
 **Participantes:** 
 - Andres Blanco Coto
@@ -28,7 +28,7 @@ Este documento detalla las retrospectivas de los sprints realizados durante el d
 - Realizar reuniones de revisión de tareas a mitad del sprint.
 
 ### Sprint Retrospective 2
-**Fecha:** Noviembre 21th, 2025
+**Fecha:** Noviembre 21, 2025
 
 **Informacion Adicional:**
 - Este segundo sprint review se realizó un poco antes de lo planeado debido a la proximidad de las fechas de entrega del proyecto final.
