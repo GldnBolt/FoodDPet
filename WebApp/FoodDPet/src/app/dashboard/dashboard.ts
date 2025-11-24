@@ -5,11 +5,21 @@ import { TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CardModule, TableModule, CommonModule, TagModule, ButtonModule],
+  imports: [
+    CardModule,
+    TableModule,
+    CommonModule,
+    TagModule,
+    ButtonModule,
+    InputTextModule,
+    FormsModule,
+  ],
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit, OnDestroy {
@@ -17,12 +27,16 @@ export class Dashboard implements OnInit, OnDestroy {
   fullnessPercentage: number = 0;
   requestHistory: FoodRequest[] = [];
   isRefilling: boolean = false;
+  esp32IpInput: string = '';
 
   private subscriptions: Subscription[] = [];
 
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit() {
+    // Cargar IP actual del servicio
+    this.esp32IpInput = this.dashboardService.getEsp32Ip();
+
     // Suscribirse a los observables para recibir actualizaciones
     this.subscriptions.push(
       this.dashboardService.fullnessStatus$.subscribe((status) => {
@@ -41,11 +55,26 @@ export class Dashboard implements OnInit, OnDestroy {
         this.requestHistory = history;
       })
     );
+
+    this.subscriptions.push(
+      this.dashboardService.esp32Ip$.subscribe((ip) => {
+        this.esp32IpInput = ip;
+      })
+    );
   }
 
   ngOnDestroy() {
     // Limpiar suscripciones
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  updateEsp32Ip() {
+    if (this.esp32IpInput.trim()) {
+      this.dashboardService.setEsp32Ip(this.esp32IpInput.trim());
+      alert('IP actualizada exitosamente');
+    } else {
+      alert('Por favor ingresa una IP válida');
+    }
   }
 
   refillDispenser() {

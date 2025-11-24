@@ -3,7 +3,13 @@
     <p-button label="Nuevo Horario" icon="pi pi-plus" (click)="openNewDialog()" />
   </div>
 
-  <p-table [value]="schedules">
+  <p-table
+    [value]="schedules"
+    [paginator]="true"
+    [rows]="5"
+    [rowsPerPageOptions]="[5, 10, 20]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} horarios">
     <ng-template #header>
       <tr>
         <th>Hora</th>
