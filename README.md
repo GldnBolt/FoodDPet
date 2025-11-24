@@ -1,8 +1,7 @@
 # FoodDPet - Alimentador Automático para Mascotas
 ## Proposito del Proyecto
-oodDPet es un sistema automatizado diseñado para facilitar la alimentación de mascotas de manera inteligente y controlada. Este proyecto integra hardware embebido y una aplicación web para proporcionar una solución completa que permite a los dueños de mascotas programar y monitorear la alimentación de sus animales de compañía de forma remota.
+FoodDPet es un sistema automatizado diseñado para facilitar la alimentación de mascotas de manera inteligente y controlada. Este proyecto integra hardware embebido y una aplicación web para proporcionar una solución completa que permite a los dueños de mascotas programar y monitorear la alimentación de sus animales de compañía de forma remota.
 
-## Instrucciones de compilación
 
 ### DEPENDENCIAS NECESARIAS
 
@@ -63,8 +62,8 @@ Introducir en la aplicación la IP que se imprime después de iniciar el sistema
 ![Diagrama del circuito](ruta/al/diagrama.png)
 
 ### DEMOSTRACIONES DE USO
-
-
+En el siguiente enlace se puede observar una demostración del funcionamiento del alimentador automático FoodDPet:
+[Demostración FoodDPet](https://www.youtube.com/@fabiola8169)
 
 ### Información Adicional
 Para más detalle sobre el diseño del proyecto, incluyendo el diseño de hardware, arquitectura de software, aplicación de usuario y comunicación, por favor consulte la documentación completa en el archivo Documentacion.md. Esta documentación incluye descripciones detalladas de los componentes utilizados y demás explicaciones técnicas, así como los diagramas de flujo del software y conexiones de hardware.
