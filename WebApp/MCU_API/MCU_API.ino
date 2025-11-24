@@ -199,8 +199,8 @@ void setup() {
     loadRequestsFromFS();
   }
 
-  //printRequestsLog();
-  //print_requests();
+  printRequestsLog();
+  print_requests();
 
   // Configurar rutas de la API
   setupRoutes();
@@ -804,7 +804,7 @@ void appendRequestToFS(String hora, String estado) {
   }
 
   file.print(hora);
-  file.print(" ");
+  file.print(",");
   file.println(estado);
   file.close();
 
