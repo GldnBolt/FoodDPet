@@ -12,8 +12,9 @@ export interface ScheduleItem {
   providedIn: 'root',
 })
 export class FoodScheduleService {
-  // IP del ESP32
-  private apiUrl = 'http://192.168.100.146/api';
+  private readonly STORAGE_KEY = 'esp32_ip';
+  private readonly DEFAULT_IP = '192.168.0.54';
+  private apiUrl: string;
 
   // BehaviorSubject para datos reactivos
   private schedulesSubject = new BehaviorSubject<ScheduleItem[]>([]);
@@ -22,7 +23,24 @@ export class FoodScheduleService {
   public schedules$ = this.schedulesSubject.asObservable();
 
   constructor(private http: HttpClient) {
+    this.apiUrl = this.buildApiUrl(this.getStoredIp());
     this.loadSchedules();
+
+    // Escuchar cambios en localStorage desde otras pestañas
+    window.addEventListener('storage', (e) => {
+      if (e.key === this.STORAGE_KEY && e.newValue) {
+        this.apiUrl = this.buildApiUrl(e.newValue);
+        this.loadSchedules();
+      }
+    });
+  }
+
+  private getStoredIp(): string {
+    return localStorage.getItem(this.STORAGE_KEY) || this.DEFAULT_IP;
+  }
+
+  private buildApiUrl(ip: string): string {
+    return `http://${ip}/api`;
   }
 
   private loadSchedules(): void {
