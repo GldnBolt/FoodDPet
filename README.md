@@ -4,10 +4,45 @@ oodDPet es un sistema automatizado diseñado para facilitar la alimentación de 
 
 ## Instrucciones de compilación
 
-PONER AQUÍ COMO EJECUTAR EL PROGRAMA (YO NO TENGO IDEA DE COMO SE EJECUTA)
-
 ### DEPENDENCIAS NECESARIAS
 
+### Aplicación Web
+- Node.js con npm
+- Angular
+
+Instalar Node.js y ejecutar el siguiente comando para instalar las dependencias
+
+``` bash
+ npm install 
+ npm install -g @angular/cli
+```
+### Software del microcontrolador
+
+Instalar el IDE de Arduino, e instalar la siguiente librerias: 
+- Adafruit VL53L1X por Adafruit
+
+Además de añadir el soporte para tarjetas:
+- esp32 por Espressif Systems
+
+### PASOS DE EJECUCIÓN
+
+### Aplicación Web
+
+Dentro de la carpeta WebApp, ejecutar el siguiente comando para abrir la aplicación en modo desarrollo
+
+```bash 
+ng serve -o
+```
+
+### Software del microcontrolador
+
+Seleccionar desde las tarjetas disponibles en el IDE de Arduino: ESP32S3 Dev Module.
+
+Reemplazar las variables ssid y password por las credenciales de la red a la que se va a conectar el alimentador.
+
+Compilar y subir el código desde el IDE.
+
+Introducir en la aplicación la IP que se imprime después de iniciar el sistema.
 
 ### LISTA DE MATERIALES CON COSTOS 
 - ESP32: $15,95
